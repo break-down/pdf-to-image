@@ -73,4 +73,4 @@ This will instruct PHP FPM to look for the `gs` binary in the right places.
 
 ## License
 
-The MIT License (MIT). Please see [License File](LICENSE.md) for more information.
+The MIT License (MIT). Please see [License File](LICENSE) for more information.
