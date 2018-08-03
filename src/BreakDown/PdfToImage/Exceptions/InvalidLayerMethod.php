@@ -2,8 +2,8 @@
 
 namespace BreakDown\PdfToImage\Exceptions;
 
-use Exception;
+use RuntimeException;
 
-class InvalidLayerMethod extends Exception
+class InvalidLayerMethod extends RuntimeException
 {
 }

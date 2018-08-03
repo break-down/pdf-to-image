@@ -2,8 +2,8 @@
 
 namespace BreakDown\PdfToImage\Exceptions;
 
-use Exception;
+use RuntimeException;
 
-class InvalidFormat extends Exception
+class InvalidFormat extends RuntimeException
 {
 }

@@ -2,8 +2,9 @@
 
 namespace BreakDown\PdfToImage\Exceptions;
 
-use Exception;
+use RuntimeException;
 
-class PdfDoesNotExist extends Exception
+class PdfDoesNotExist extends RuntimeException
 {
+
 }
