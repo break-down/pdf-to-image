@@ -216,7 +216,7 @@ class PdfToImage
         }
 
         $imagick->readImageBlob($this->resourcePdf->getData());
-        $imagick->setImageIndex($page - 1);
+        $imagick->setIteratorIndex($page - 1);
 
         if (is_int($this->layerMethod)) {
             $imagick = $imagick->mergeImageLayers($this->layerMethod);
