@@ -66,12 +66,6 @@ env[PATH] = /usr/local/bin:/usr/bin:/bin
 
 This will instruct PHP FPM to look for the `gs` binary in the right places.
 
-## Testing
-
-``` bash
-$ composer test
-```
-
 
 ## Credits
 
