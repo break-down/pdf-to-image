@@ -1,5 +1,5 @@
 # Convert a PDF to an Image
-A wrapper around Imagick to ease out conversion of PDF files to a JPEG/JPG image.
+A wrapper around Imagick to ease out conversion of PDF file to a JPEG/JPG image.
 
 ## Requirements
 
