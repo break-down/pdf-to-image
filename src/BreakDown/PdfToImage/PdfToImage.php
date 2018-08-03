@@ -3,6 +3,7 @@
 namespace BreakDown\PdfToImage;
 
 use BreakDown\PdfToImage\Exceptions as Exceptions;
+use BreakDown\PdfToImage\Protocols\IResource;
 use Imagick;
 
 class PdfToImage
@@ -10,9 +11,9 @@ class PdfToImage
 
     /**
      *
-     * @var string
+     * @var IResource
      */
-    protected $pdfFile;
+    protected $resourcePdf;
 
     /**
      *
@@ -31,12 +32,6 @@ class PdfToImage
      * @var int
      */
     protected $page = 1;
-
-    /**
-     *
-     * @var Imagick
-     */
-    public $imagick;
 
     /**
      *
@@ -69,22 +64,20 @@ class PdfToImage
     protected $compressionQuality;
 
     /**
-     * @param string $pdfFile The path or url to the pdffile.
+     * @param IResource $resourse
      *
      * @throws Exceptions\PdfDoesNotExist
      */
-    public function __construct($pdfFile)
+    public function __construct(IResource $resourse)
     {
-        if (!filter_var($pdfFile, FILTER_VALIDATE_URL) && !file_exists($pdfFile)) {
-            throw new Exceptions\PdfDoesNotExist;
+        if (!$resourse->isValid()) {
+            throw new Exceptions\PdfDoesNotExist("Invalid PDF Resource Provided.");
         }
 
-        $this->imagick = new Imagick($pdfFile);
-
-        $this->numberOfPages = $this->imagick->getNumberImages();
-
-        $this->pdfFile = $pdfFile;
+        $this->resourcePdf = $resourse;
     }
+
+    // <editor-fold defaultstate="collapsed" desc="Setters">
 
     /**
      * Set the raster resolution.
@@ -121,16 +114,6 @@ class PdfToImage
     }
 
     /**
-     * Get the output format.
-     *
-     * @return string
-     */
-    public function getOutputFormat()
-    {
-        return $this->outputFormat;
-    }
-
-    /**
      * Sets the layer method for Imagick::mergeImageLayers()
      * If int, should correspond to a predefined LAYERMETHOD constant.
      * If null, Imagick::mergeImageLayers() will not be called.
@@ -153,133 +136,6 @@ class PdfToImage
         $this->layerMethod = $layerMethod;
 
         return $this;
-    }
-
-    /**
-     * Determine if the given format is a valid output format.
-     *
-     * @param $outputFormat
-     *
-     * @return bool
-     */
-    public function isValidOutputFormat($outputFormat)
-    {
-        return in_array($outputFormat, $this->validOutputFormats);
-    }
-
-    /**
-     * Set the page number that should be rendered.
-     *
-     * @param int $page
-     *
-     * @return self
-     *
-     * @throws Exceptions\PageDoesNotExist
-     */
-    public function setPage($page)
-    {
-        if ($page > $this->getNumberOfPages() || $page < 1) {
-            throw new Exceptions\PageDoesNotExist("Page {$page} does not exist");
-        }
-
-        $this->page = $page;
-
-        return $this;
-    }
-
-    /**
-     * Get the number of pages in the pdf file.
-     *
-     * @return int
-     */
-    public function getNumberOfPages()
-    {
-        return $this->numberOfPages;
-    }
-
-    /**
-     * Save the image to the given path.
-     *
-     * @param string $pathToImage
-     *
-     * @return bool
-     */
-    public function saveImage($pathToImage)
-    {
-        if (is_dir($pathToImage)) {
-            $pathToImage = rtrim($pathToImage, '\/') . DIRECTORY_SEPARATOR . $this->page . '.' . $this->outputFormat;
-        }
-
-        $imageData = $this->getImageData($pathToImage);
-
-        return file_put_contents($pathToImage, $imageData) !== false;
-    }
-
-    /**
-     * Save the file as images to the given directory.
-     *
-     * @param string $directory
-     * @param string $prefix
-     *
-     * @return array $files the paths to the created images
-     */
-    public function saveAllPagesAsImages($directory, $prefix = '')
-    {
-        $numberOfPages = $this->getNumberOfPages();
-
-        if ($numberOfPages === 0) {
-            return [];
-        }
-
-        return array_map(function ($pageNumber) use ($directory, $prefix) {
-            $this->setPage($pageNumber);
-
-            $destination = "{$directory}/{$prefix}{$pageNumber}.{$this->outputFormat}";
-
-            $this->saveImage($destination);
-
-            return $destination;
-        }, range(1, $numberOfPages));
-    }
-
-    /**
-     * Return raw image data.
-     *
-     * @param string $pathToImage
-     *
-     * @return \Imagick
-     */
-    public function getImageData($pathToImage)
-    {
-        /*
-         * Reinitialize imagick because the target resolution must be set
-         * before reading the actual image.
-         */
-        $this->imagick = new Imagick();
-
-        $this->imagick->setResolution($this->resolution, $this->resolution);
-
-        if ($this->colorspace !== null) {
-            $this->imagick->setColorspace($this->colorspace);
-        }
-
-        if ($this->compressionQuality !== null) {
-            $this->imagick->setCompressionQuality($this->compressionQuality);
-        }
-
-        if (filter_var($this->pdfFile, FILTER_VALIDATE_URL)) {
-            return $this->getRemoteImageData($pathToImage);
-        }
-
-        $this->imagick->readImage(sprintf('%s[%s]', $this->pdfFile, $this->page - 1));
-
-        if (is_int($this->layerMethod)) {
-            $this->imagick = $this->imagick->mergeImageLayers($this->layerMethod);
-        }
-
-        $this->imagick->setFormat($this->determineOutputFormat($pathToImage));
-
-        return $this->imagick;
     }
 
     /**
@@ -306,27 +162,122 @@ class PdfToImage
         return $this;
     }
 
+    // </editor-fold>
+    // <editor-fold defaultstate="collapsed" desc="Getters">
+
     /**
-     * Return remote raw image data.
+     * Get the output format.
      *
-     * @param string $pathToImage
-     *
-     * @return Imagick
+     * @return string
      */
-    protected function getRemoteImageData($pathToImage)
+    public function getOutputFormat()
     {
-        $this->imagick->readImage($this->pdfFile);
+        return $this->outputFormat;
+    }
 
-        $this->imagick->setIteratorIndex($this->page - 1);
+    /**
+     * Get the number of pages in the PDF file.
+     *
+     * @return int
+     */
+    public function getNumberOfPages()
+    {
+        if (!$this->numberOfPages) {
+            $imagick = new Imagick($this->resourcePdf->getData());
+            $this->numberOfPages = $imagick->getNumberImages();
+        }
+        return $this->numberOfPages;
+    }
 
-        if (is_int($this->layerMethod)) {
-            $this->imagick = $this->imagick->mergeImageLayers($this->layerMethod);
+    /**
+     * Return raw image data.
+     *
+     * @param int $page
+     * @param string $outputPath
+     *
+     * @return string
+     */
+    public function getPageAsImage($page, $outputPath)
+    {
+        /*
+         * Reinitialize imagick because the target resolution must be set
+         * before reading the actual image.
+         */
+        $imagick = new Imagick();
+
+        $imagick->setResolution($this->resolution, $this->resolution);
+
+        if ($this->colorspace !== null) {
+            $imagick->setColorspace($this->colorspace);
         }
 
-        $this->imagick->setFormat($this->determineOutputFormat($pathToImage));
+        if ($this->compressionQuality !== null) {
+            $imagick->setCompressionQuality($this->compressionQuality);
+        }
 
-        return $this->imagick;
+        $imagick->readImageBlob($this->resourcePdf->getData());
+        $imagick->setImageIndex($page - 1);
+
+        if (is_int($this->layerMethod)) {
+            $imagick = $imagick->mergeImageLayers($this->layerMethod);
+        }
+
+        $imagick->setFormat($this->determineOutputFormat($outputPath));
+
+        return $imagick->getImageBlob();
     }
+
+    // </editor-fold>
+    // <editor-fold defaultstate="collapsed" desc="Save Image">
+
+    /**
+     * Save the image to the given path.
+     *
+     * @param int $page
+     * @param string $pathToImage
+     *
+     * @return bool
+     */
+    public function savePageAsImage($page, $pathToImage)
+    {
+        if (is_dir($pathToImage)) {
+            $pathToImage = rtrim($pathToImage, '\/') . DIRECTORY_SEPARATOR . $page . '.' . $this->outputFormat;
+        }
+
+        $imageData = $this->getPageAsImage($pathToImage);
+
+        return file_put_contents($pathToImage, $imageData) !== false;
+    }
+
+    /**
+     * Save the file as images to the given directory.
+     *
+     * @param string $directory
+     * @param string $prefix
+     *
+     * @return array $files the paths to the created images
+     */
+    public function saveAllPagesAsImages($directory, $prefix = '')
+    {
+        $numberOfPages = $this->getNumberOfPages();
+
+        if ($numberOfPages === 0) {
+            return [];
+        }
+
+        return array_map(function ($pageNumber) use ($directory, $prefix) {
+            $this->setPage($pageNumber);
+
+            $destination = "{$directory}/{$prefix}{$pageNumber}.{$this->outputFormat}";
+
+            $this->savePageAsImage($destination);
+
+            return $destination;
+        }, range(1, $numberOfPages));
+    }
+
+    // </editor-fold>
+    // <editor-fold defaultstate="collapsed" desc="Helper Methods">
 
     /**
      * Determine in which format the image must be rendered.
@@ -352,4 +303,17 @@ class PdfToImage
         return $outputFormat;
     }
 
+    /**
+     * Determine if the given format is a valid output format.
+     *
+     * @param $outputFormat
+     *
+     * @return bool
+     */
+    protected function isValidOutputFormat($outputFormat)
+    {
+        return in_array($outputFormat, $this->validOutputFormats);
+    }
+
+    // </editor-fold>
 }
