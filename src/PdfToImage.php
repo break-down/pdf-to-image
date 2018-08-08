@@ -31,12 +31,6 @@ class PdfToImage
      *
      * @var int
      */
-    protected $page = 1;
-
-    /**
-     *
-     * @var int
-     */
     protected $numberOfPages;
 
     /**
@@ -55,7 +49,7 @@ class PdfToImage
      *
      * @var int
      */
-    protected $colorspace;
+    protected $colorSpace;
 
     /**
      *
@@ -145,7 +139,7 @@ class PdfToImage
      */
     public function setColorspace($colorspace)
     {
-        $this->colorspace = $colorspace;
+        $this->colorSpace = $colorspace;
 
         return $this;
     }
@@ -197,7 +191,7 @@ class PdfToImage
      *
      * @return string
      */
-    public function getPageAsImage($page, $outputPath)
+    public function getPageAsImage($page, $format = null)
     {
         /*
          * Reinitialize imagick because the target resolution must be set
@@ -207,8 +201,8 @@ class PdfToImage
 
         $imagick->setResolution($this->resolution, $this->resolution);
 
-        if ($this->colorspace !== null) {
-            $imagick->setColorspace($this->colorspace);
+        if ($this->colorSpace !== null) {
+            $imagick->setColorspace($this->colorSpace);
         }
 
         if ($this->compressionQuality !== null) {
@@ -222,7 +216,7 @@ class PdfToImage
             $imagick = $imagick->mergeImageLayers($this->layerMethod);
         }
 
-        $imagick->setFormat($this->determineOutputFormat($outputPath));
+        $imagick->setFormat($format ? $format : $this->outputFormat);
 
         return $imagick->getImageBlob();
     }
@@ -244,7 +238,7 @@ class PdfToImage
             $pathToImage = rtrim($pathToImage, '\/') . DIRECTORY_SEPARATOR . $page . '.' . $this->outputFormat;
         }
 
-        $imageData = $this->getPageAsImage($pathToImage);
+        $imageData = $this->getPageAsImage($page, $this->determineOutputFormat($pathToImage));
 
         return file_put_contents($pathToImage, $imageData) !== false;
     }
@@ -286,7 +280,7 @@ class PdfToImage
      *
      * @return string
      */
-    protected function determineOutputFormat($pathToImage)
+    private function determineOutputFormat($pathToImage)
     {
         $outputFormat = pathinfo($pathToImage, PATHINFO_EXTENSION);
 
