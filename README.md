@@ -17,8 +17,8 @@ $ composer require break-down/pdf-to-image
 Converting a pdf to an image is easy.
 
 ```php
-$pdf = new BreakDown\PdfToImage\Pdf($pathToPdf);
-$pdf->saveImage($pathToWhereImageShouldBeStored);
+$pdf = new BreakDown\PdfToImage\PdfToImage(new BreakDown\PdfToImage\Resources\FilePath($pathToPdfFile));
+$pdf->savePageAsImage($pageNumber, $pathToWhereImageShouldBeStored);
 ```
 
 If the path you pass to `saveImage` has the extensions `jpg`, `jpeg`, or `png` the image will be saved in that format.
@@ -31,16 +31,10 @@ You can get the total number of pages in the pdf:
 $pdf->getNumberOfPages(); //returns an int
 ```
 
-By default the first page of the pdf will be rendered. If you want to render another page you can do so:
-```php
-$pdf->setPage(2)
-    ->saveImage($pathToWhereImageShouldBeStored); //saves the second page
-```
-
 You can override the output format:
 ```php
 $pdf->setOutputFormat('png')
-    ->saveImage($pathToWhereImageShouldBeStored); //the output wil be a png, no matter what
+    ->savePageAsImage($pageNumber, $pathToWhereImageShouldBeStored); //the output wil be a png, no matter what
 ```
 
 You can set the quality of compression from 0 to 100:
